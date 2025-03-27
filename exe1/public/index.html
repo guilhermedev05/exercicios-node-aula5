@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercicio 1</title>
+</head>
+<body>
+    <label for="feedback">Feedback<label> <br>
+    <input type="text" id="mensagemFeedback">
+    <button id="feedback">Enviar feedback</button>
+
+    <div id="feedbacks">
+        <h3>Feedbacks</h3>
+
+        <ul>
+
+        </ul>
+    </div>
+
+    <script>
+        document.querySelector('#feedback').addEventListener('click', (e) => {
+            novo_feedback = document.querySelector('#mensagemFeedback').value
+            document.querySelector('#mensagemFeedback').value = ''
+            
+            fetch('/feedback', {
+                method: 'POST',
+                headers: {'Content-type': 'Application/json'},
+                body: JSON.stringify({"mensagem": novo_feedback})
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.querySelector('#feedbacks ul').innerHTML = ''
+                data.dados.map(dado => {
+                    let li = document.createElement('li')
+                    li.innerHTML = dado
+                    document.querySelector('#feedbacks ul').appendChild(li)
+                })
+                
+            })
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendar Consulta</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            text-align: left;
+        }
+
+        .delete-btn {
+            cursor: pointer;
+            color: white;
+            border-radius: 5px;
+            background-color: red;
+            padding: 5px 10px;
+            margin-left: 10px;
+        }
+
+        .paciente:hover .delete-btn {
+            display: inline;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Agendar Consulta</h1>
+
+    <form id="consultaForm">
+        <label for="paciente">Nome do Paciente:</label>
+        <input type="text" id="paciente" name="paciente" required><br><br>
+
+        <label for="data">Data da Consulta:</label>
+        <input type="date" id="data" name="data" required><br><br>
+
+        <label for="hora">Hora da Consulta:</label>
+        <input type="time" id="hora" name="hora" required><br><br>
+
+        <button type="submit">Agendar</button>
+    </form>
+
+    <div id="mensagem"></div>
+
+    <h2>Consultas Agendadas</h2>
+    <table id="consultasTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Paciente</th>
+                <th>Data</th>
+                <th>Hora</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- As consultas agendadas serão adicionadas aqui -->
+        </tbody>
+    </table>
+
+    <script>
+        function carregarConsultas() {
+            fetch('/consultas')
+                .then(res => res.json())
+                .then(dados => {
+                    dados.consultas.forEach(consulta => {
+                        addConsulta(consulta)
+                    })
+                })
+                .catch(error => console.error('Erro ao carregar consultas:', error))
+        }
+        document.getElementById('consultaForm').addEventListener('submit', function (event) {
+
+            const paciente = document.getElementById('paciente').value
+            const data = document.getElementById('data').value
+            const hora = document.getElementById('hora').value
+
+            const consulta = {
+                paciente: paciente,
+                data: data,
+                hora: hora
+            }
+
+            fetch('/agendar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(consulta)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('mensagem').innerText = data.mensagem || 'Consulta agendada com sucesso!'
+
+                    addConsulta(data.consultas[data.consultas.length - 1])
+                })
+                .catch(error => {
+                    console.error('Erro:', error)
+                    document.getElementById('mensagem').innerText = 'Ocorreu um erro ao agendar a consulta'
+                })
+        })
+
+        function addConsulta(consulta) {
+            const tableBody = document.getElementById('consultasTable').getElementsByTagName('tbody')[0]
+            const newRow = tableBody.insertRow()
+
+            const idCell = newRow.insertCell(0)
+            const pacienteCell = newRow.insertCell(1)
+            const dataCell = newRow.insertCell(2)
+            const horaCell = newRow.insertCell(3)
+            const acaoCell = newRow.insertCell(4)
+
+            idCell.textContent = consulta.id
+            pacienteCell.textContent = consulta.paciente
+            dataCell.textContent = consulta.data
+            horaCell.textContent = consulta.hora
+
+            const deleteBtn = document.createElement('span')
+            deleteBtn.classList.add('delete-btn')
+            deleteBtn.innerHTML = 'Cancelar consulta'
+            acaoCell.appendChild(deleteBtn)
+
+            // Ação do botão de excluir
+            deleteBtn.addEventListener('click', function () {
+                deleteConsulta(consulta.id, newRow)
+            })
+        }
+
+        function deleteConsulta(id, row) {
+            fetch(`/cancelar/${id}`, {
+                method: 'DELETE'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.mensagem === 'Consulta cancelada') {
+                        // Remove a linha da tabela
+                        row.remove()
+                        document.getElementById('mensagem').innerText = 'Consulta cancelada com sucesso!'
+                    } else {
+                        document.getElementById('mensagem').innerText = 'Erro ao cancelar a consulta'
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error)
+                    document.getElementById('mensagem').innerText = 'Ocorreu um erro ao cancelar a consulta'
+                })
+        }
+
+        carregarConsultas()
+    </script>
+</body>
+
+</html>
